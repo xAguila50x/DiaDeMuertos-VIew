@@ -221,6 +221,8 @@ class JoystickTactil:
         self.fondo.set_pos(cx, 0, cz)
         self.fondo["frameSize"] = (-radio, radio, -radio, radio)
         self.perilla["frameSize"] = (-perilla, perilla, -perilla, perilla)
+        self.fondo.set_scale(1.0, 1.0, 1.0)
+        self.perilla.set_scale(1.0, 1.0, 1.0)
 
         # Botones de la derecha, apilados en vertical.
         bw = max(110.0, min(w * 0.20, 240.0))
@@ -228,13 +230,16 @@ class JoystickTactil:
         bh = max(40.0, min(h * 0.075, 64.0))
         self._bw, self._bh = bw, bh
         x_der = w - m - bw / 2
-        self.boton_menu.set_pos(x_der, 0, -(h - m - bh / 2))
-        self.boton_vista.set_pos(x_der, 0, -(h - m - bh - gap - bh / 2))
+        z_menu = -(h - m - bh / 2)
+        z_vista = -(h - m - bh - gap - bh / 2)
+        self.boton_menu.set_pos(x_der, 0, z_menu)
+        self.boton_vista.set_pos(x_der, 0, z_vista)
         fs = (-bw / 2, bw / 2, -bh / 2, bh / 2)
         esc_b = max(11.0, min(20.0, bh * 0.36))
         for boton in (self.boton_vista, self.boton_menu):
             boton["frameSize"] = fs
             boton["text_scale"] = (esc_b, esc_b)
+            boton.set_scale(1.0, 1.0, 1.0)
 
         # Panel: encima de los botones; 2 columnas si la pantalla es baja/estrecha.
         n = max(1, len(self._botones_acceso))
@@ -429,3 +434,4 @@ class JoystickTactil:
             self.menu_abierto = False
             self.soltar()
             self._refrescar_textos()
+
