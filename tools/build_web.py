@@ -208,18 +208,46 @@ def parchear_index():
         f'cdn : "cdn/{CDN_VERSION}/",',
         f'cdn : new URL("cdn/{CDN_VERSION}/", document.baseURI).href,',
     )
+    if "El canvas siempre ocupa la ventana" not in html:
+        html = html.replace(
+            "</head>",
+            "    <style>\n"
+        "        /* El canvas siempre ocupa la ventana, aunque Panda3D cambie su estilo. */\n"
+        "        #canvas {\n"
+        "            position: fixed !important; left: 0 !important; top: 0 !important;\n"
+        "            right: 0 !important; bottom: 0 !important; margin: 0 !important;\n"
+        "            transform: none !important; max-width: none !important; max-height: none !important;\n"
+        "            width: 100vw !important; height: 100vh !important; height: 100dvh !important;\n"
+        "            background: #000 !important;\n"
+        "        }\n"
+        "        html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important;\n"
+        "            height: 100% !important; background: #101018 !important; }\n"
+        "    </style>\n"
+        "</head>",
+        1,
+    )
+
     html = html.replace(
         "async function custom_onload(debug_hidden) {",
         "async function custom_onload(debug_hidden) {\n"
-        "        var c2 = document.getElementById(\"canvas\")\n"
-        "        if (c2) {\n"
-        "            c2.hidden = false; c2.style.display = \"block\"; c2.style.visibility = \"visible\"\n"
-        "            c2.style.position = \"absolute\"; c2.style.left = \"50%\"\n"
-        "            c2.style.transform = \"translateX(-50%)\"; c2.style.top = \"0\"\n"
-        "            c2.style.width = \"100vw\"; c2.style.height = \"56.25vw\"\n"
-        "            c2.style.maxHeight = \"100vh\"; c2.style.maxWidth = \"177.78vh\"\n"
+        "        // Canvas a pantalla completa (PC y movil, cualquier orientacion).\n"
+        "        function ajustar_pantalla() {\n"
+        "            var e = document.getElementById(\"canvas\")\n"
+        "            if (!e) return\n"
+        "            e.hidden = false; e.style.display = \"block\"; e.style.visibility = \"visible\"\n"
+        "            e.style.position = \"fixed\"; e.style.left = \"0\"; e.style.top = \"0\"\n"
+        "            e.style.right = \"0\"; e.style.bottom = \"0\"; e.style.transform = \"none\"\n"
+        "            e.style.margin = \"0\"; e.style.maxWidth = \"none\"; e.style.maxHeight = \"none\"\n"
+        "            e.style.width = \"100vw\"; e.style.height = \"100vh\"; e.style.height = \"100dvh\"\n"
+        "            e.style.background = \"#000\"\n"
+        "            document.documentElement.style.height = \"100%\"\n"
+        "            document.body.style.margin = \"0\"; document.body.style.padding = \"0\"\n"
+        "            document.body.style.height = \"100%\"; document.body.style.overflow = \"hidden\"\n"
+        "            document.body.style.background = \"#101018\"\n"
         "        }\n"
-        "        document.body.style.background = \"#101018\"\n"
+        "        ajustar_pantalla()\n"
+        "        window.addEventListener(\"resize\", ajustar_pantalla)\n"
+        "        window.addEventListener(\"orientationchange\", function(){ setTimeout(ajustar_pantalla, 250) })\n"
         "        // Telemetría: el estado viaja al access log del servidor (fetch a /log).\n"
         "        setInterval(function(){\n"
         "            try {\n"

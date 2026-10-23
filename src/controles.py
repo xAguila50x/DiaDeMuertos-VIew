@@ -95,7 +95,7 @@ class Controles:
         if self.tactil and getattr(self.tactil, "activo", False):
             if self.tactil.procesar_toque(m):
                 return
-            if hasattr(self.tactil, "es_toque_en_ui") and self.tactil.es_toque_en_ui(m):
+            if hasattr(self.tactil, "manejar_toque_ui") and self.tactil.manejar_toque_ui(m):
                 return
 
         # Si no, es rotación libre de cámara
