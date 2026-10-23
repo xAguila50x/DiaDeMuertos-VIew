@@ -67,7 +67,7 @@ class JoystickTactil:
         self.fondo.set_bin("fixed", 10)
 
         self.perilla = DirectFrame(
-            frameColor=(1.0, 0.72, 0.22, 0.85),
+            frameColor=(1.0, 0.72, 0.22, 0.95),
             frameSize=(-1, 1, -1, 1),
             pos=(0, 0, 0),
             parent=self.fondo,
@@ -160,6 +160,102 @@ class JoystickTactil:
         except Exception:
             pass
 
+    def _aplicar_layout(self, w, h):
+        base = self.base
+        corto = min(w, h)
+        largo = max(w, h)
+        m = max(10.0, round(corto * 0.035))
+        gap = max(6.0, round(m * 0.4))
+        self._margen, self._gap = m, gap
+
+        # Joystick: radio proporcional al lado corto de la pantalla.
+        radio = max(42.0, min(corto * 0.12, 110.0))
+        perilla = max(14.0, radio * 0.36)
+        self._radio, self._perilla = radio, perilla
+        cx = m + radio
+        cz = -(h - m - radio)
+        self._centro_joy = (cx, cz)
+        self.fondo.set_pos(cx, 0, cz)
+        self.fondo["frameSize"] = (-radio, radio, -radio, radio)
+        self.perilla["frameSize"] = (-perilla, perilla, -perilla, perilla)
+        self.fondo.set_scale(1.0, 1.0, 1.0)
+        self.perilla.set_scale(1.0, 1.0, 1.0)
+
+        # Botones de la derecha, apilados en vertical.
+        bw = max(110.0, min(w * 0.20, 240.0))
+        bw = min(bw, max(110.0, w * 0.45))
+        bh = max(40.0, min(h * 0.075, 64.0))
+        self._bw, self._bh = bw, bh
+        x_der = w - m - bw / 2
+        z_menu = -(h - m - bh / 2)
+        z_vista = -(h - m - bh - gap - bh / 2)
+        self.boton_menu.set_pos(x_der, 0, z_menu)
+        self.boton_vista.set_pos(x_der, 0, z_vista)
+        fs = (-bw / 2, bw / 2, -bh / 2, bh / 2)
+        esc_b = max(11.0, min(20.0, bh * 0.36))
+        for boton in (self.boton_vista, self.boton_menu):
+            boton["frameSize"] = fs
+            boton["text_scale"] = (esc_b, esc_b)
+            boton.set_scale(1.0, 1.0, 1.0)
+
+        # Panel: encima de los botones; 2 columnas si la pantalla es baja/estrecha.
+        n = max(1, len(self._botones_acceso))
+        columnas = 1
+        if n > 4 and h < 560:
+            columnas = 2
+        elif n > 6 and w < 560:
+            columnas = 2
+        filas = (n + columnas - 1) // columnas
+        fila_h = max(30.0, bh * 0.9)
+        panel_w = max(180.0, w * 0.46)
+        panel_w = min(panel_w, w - 2 * m)
+        panel_w = min(panel_w, w - m - (m + 2 * radio + 6.0) - m)
+        panel_w = max(140.0, panel_w)
+        z0 = -(h - m - 2 * bh - gap - 12.0)
+        alto_disponible = (-(m + 4.0)) - z0
+        panel_h = filas * fila_h + 18.0
+        if panel_h > alto_disponible:
+            fila_h = max(24.0, (alto_disponible - 18.0) / filas)
+            panel_h = filas * fila_h + 18.0
+        self._panel_w, self._panel_h, self._panel_z0 = panel_w, panel_h, z0
+        self.panel_menu.set_pos(w - m - panel_w / 2, 0, z0 + panel_h / 2)
+        self.panel_menu["frameSize"] = (-panel_w / 2, panel_w / 2, -panel_h / 2, panel_h / 2)
+
+        ancho_celda = panel_w / columnas if columnas else panel_w
+        self._columnas, self._ancho_celda = columnas, ancho_celda
+        esc_p = max(12.0, min(16.0, fila_h * 0.48))
+        self._esc_p = esc_p
+        for idx, boton in enumerate(self._botones_acceso):
+            col = idx % columnas
+            fila = idx // columnas
+            bx = ancho_celda * (col + 0.5) - panel_w / 2
+            bz = panel_h / 2 - 9.0 - fila_h * (fila + 0.5)
+            boton.set_pos(bx, 0, bz)
+            boton["frameSize"] = (-ancho_celda * 0.46, ancho_celda * 0.46, -fila_h * 0.40, fila_h * 0.40)
+            boton["text_scale"] = (esc_p, esc_p)
+
+        # Zonas pulsables en coordenadas de pixel2d (para no depender de DirectGui).
+        self._rects["menu"] = (x_der - bw / 2, x_der + bw / 2,
+                               z_menu - bh / 2, z_menu + bh / 2)
+        self._rects["vista"] = (x_der - bw / 2, x_der + bw / 2,
+                                z_vista - bh / 2, z_vista + bh / 2)
+        panel_cx = w - m - panel_w / 2
+        panel_cz = z0 + panel_h / 2
+        self._rects["panel"] = (panel_cx - panel_w / 2, panel_cx + panel_w / 2,
+                                z0, z0 + panel_h)
+        filas_rects = []
+        for idx in range(n):
+            col = idx % columnas
+            fila = idx // columnas
+            cx = panel_cx - panel_w / 2 + ancho_celda * (col + 0.5)
+            cz = panel_cz + panel_h / 2 - 9.0 - fila_h * (fila + 0.5)
+            hw = ancho_celda * 0.46
+            hh = fila_h * 0.40
+            filas_rects.append((cx - hw, cx + hw, cz - hh, cz + hh))
+        self._rects["filas"] = filas_rects
+
+        self._refrescar_textos()
+
     def _reubicar(self, forzar=False):
         base = self.base
         win = getattr(base, "win", None)
@@ -185,9 +281,9 @@ class JoystickTactil:
         self._w, self._h = w, h
 
         # ShowBase solo fija pixel2d/aspect2d al iniciar: recalcular al redimensionar.
-        escala = 2.0 / float(min(w, h)) if min(w, h) > 0 else 0.002
-        base.pixel2d.set_pos(0.0, 0.0, 0.0)
-        base.pixel2d.set_scale(escala, 1.0, escala)
+        base.pixel2d.set_pos(-1.0, 0.0, 1.0)
+        base.pixel2d.set_scale(2.0 / w, 1.0, 2.0 / h)
+        self._aplicar_layout(w, h)
 
         ar = float(w) / float(h)
         base.aspect2d.set_scale(1.0 / ar, 1.0, 1.0)
@@ -278,12 +374,9 @@ class JoystickTactil:
             boton["text_scale"] = (esc_p, esc_p)
 
         # Zonas pulsables en coordenadas de pixel2d (para no depender de DirectGui).
-        cx_btn = (w / 2.0 - m - bw / 2.0) * escala
-        cz_menu = -(h / 2.0 - m - bh / 2.0) * escala
-        cz_vista = -(h / 2.0 - m - bh - gap - bh / 2.0) * escala
-        x_btn = cx_btn / escala
-        z_menu = cz_menu / escala
-        z_vista = cz_vista / escala
+        x_btn = w - m - bw / 2
+        z_menu = -(h - m - bh / 2)
+        z_vista = -(h - m - bh - gap - bh / 2)
         self._rects["menu"] = (x_btn - bw / 2, x_btn + bw / 2,
                                z_menu - bh / 2, z_menu + bh / 2)
         self._rects["vista"] = (x_btn - bw / 2, x_btn + bw / 2,
