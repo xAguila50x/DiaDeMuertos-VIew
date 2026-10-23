@@ -185,8 +185,9 @@ class JoystickTactil:
         self._w, self._h = w, h
 
         # ShowBase solo fija pixel2d/aspect2d al iniciar: recalcular al redimensionar.
-        base.pixel2d.set_pos(-1, 0, 1)
-        base.pixel2d.set_scale(2.0 / w, 1.0, 2.0 / h)
+        escala = 2.0 / float(min(w, h)) if min(w, h) > 0 else 0.002
+        base.pixel2d.set_pos(0.0, 0.0, 0.0)
+        base.pixel2d.set_scale(escala, 1.0, escala)
 
         ar = float(w) / float(h)
         base.aspect2d.set_scale(1.0 / ar, 1.0, 1.0)
@@ -272,9 +273,12 @@ class JoystickTactil:
             boton["text_scale"] = (esc_p, esc_p)
 
         # Zonas pulsables en coordenadas de pixel2d (para no depender de DirectGui).
-        x_btn = w - m - bw / 2
-        z_menu = -(h - m - bh / 2)
-        z_vista = -(h - m - bh - gap - bh / 2)
+        cx_btn = (w / 2.0 - m - bw / 2.0) * escala
+        cz_menu = -(h / 2.0 - m - bh / 2.0) * escala
+        cz_vista = -(h / 2.0 - m - bh - gap - bh / 2.0) * escala
+        x_btn = cx_btn / escala
+        z_menu = cz_menu / escala
+        z_vista = cz_vista / escala
         self._rects["menu"] = (x_btn - bw / 2, x_btn + bw / 2,
                                z_menu - bh / 2, z_menu + bh / 2)
         self._rects["vista"] = (x_btn - bw / 2, x_btn + bw / 2,
