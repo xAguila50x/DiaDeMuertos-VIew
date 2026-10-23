@@ -1,0 +1,11 @@
+# Entorno y artefactos de build
+.venv/
+build/
+__pycache__/
+*.pyc
+.ruff_cache/
+.vscode/
+srv*.txt
+
+# Temporales
+*.log
