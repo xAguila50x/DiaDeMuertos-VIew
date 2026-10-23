@@ -58,8 +58,8 @@ class JoystickTactil:
         self.fondo = DirectFrame(
             parent=padre,
             frameColor=(0.10, 0.08, 0.16, 0.55),
-            frameSize=(-self._radio, self._radio, -self._radio, self._radio),
-            pos=(self._centro_joy[0], 0, self._centro_joy[1]),
+            frameSize=(-1, 1, -1, 1),
+            pos=(0, 0, 0),
             relief=1,
             suppressMouse=0,
         )
@@ -68,7 +68,7 @@ class JoystickTactil:
 
         self.perilla = DirectFrame(
             frameColor=(1.0, 0.72, 0.22, 0.85),
-            frameSize=(-self._perilla, self._perilla, -self._perilla, self._perilla),
+            frameSize=(-1, 1, -1, 1),
             pos=(0, 0, 0),
             parent=self.fondo,
             relief=1,
