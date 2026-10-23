@@ -1,4 +1,4 @@
-﻿# tactil.py - Interfaz t├íctil para m├│vil: joystick virtual y acceso r├ípido a vistas.
+# tactil.py - Interfaz táctil para móvil: joystick virtual y acceso rápido a vistas.
 
 from panda3d.core import (
     Point3,
@@ -9,11 +9,11 @@ from direct.gui.DirectGui import DirectFrame
 
 
 class JoystickTactil:
-    """Controles t├íctiles responsivos: joystick virtual abajo a la izquierda,
+    """Controles táctiles responsivos: joystick virtual abajo a la izquierda,
 
-    bot├│n de ciclo r├ípido y men├║ desplegable de acceso r├ípido a todas las vistas
-    abajo a la derecha. Se reposicionan y redimensionan al cambiar el tama├▒o de
-    la ventana o la orientaci├│n del dispositivo (vertical / horizontal).
+    botón de ciclo rápido y menú desplegable de acceso rápido a todas las vistas
+    abajo a la derecha. Se reposicionan y redimensionan al cambiar el tamaño de
+    la ventana o la orientación del dispositivo (vertical / horizontal).
     """
 
     def __init__(self, base, controles, vistas=None):
@@ -52,14 +52,26 @@ class JoystickTactil:
     # ------------------------------------------------------------------ build
     def _construir(self):
         base = self.base
-        padre = base.pixel2d
+        # Con "coordinate-system yup" el eje vertical de la UI es Y, no Z.
+        # pixel2d es un PGTop y su transformación no se puede reutilizar con
+        # seguridad: usamos un nodo normal en espacio de píxeles (X derecha,
+        # Y arriba) y dejamos pixel2d intacto para el hit-testing.
+        padre = base.render2d.attach_new_node("ui_tactil_px")
+        self._raiz_ui = padre
+        try:
+            w0 = max(2, int(base.win.get_x_size()))
+            h0 = max(2, int(base.win.get_y_size()))
+        except Exception:
+            w0, h0 = 400, 800
+        padre.set_pos(-1, 1, 0)
+        padre.set_scale(2.0 / w0, 2.0 / h0, 1.0)
 
         # ---------------- Joystick virtual (abajo a la izquierda) ----------------
         self.fondo = DirectFrame(
             parent=padre,
             frameColor=(0.10, 0.08, 0.16, 0.55),
             frameSize=(-self._radio, self._radio, -self._radio, self._radio),
-            pos=(self._centro_joy[0], 0, self._centro_joy[1]),
+            pos=(self._centro_joy[0], self._centro_joy[1], 0),
             relief=1,
             suppressMouse=0,
         )
@@ -103,12 +115,12 @@ class JoystickTactil:
         self.boton_menu.set_transparency(TransparencyAttrib.M_alpha)
         self.boton_menu.set_bin("fixed", 15)
 
-        # ---------------- Panel desplegable de acceso r├ípido ----------------
+        # ---------------- Panel desplegable de acceso rápido ----------------
         self.panel_menu = DirectFrame(
             parent=padre,
             frameColor=(0.12, 0.09, 0.18, 0.92),
             frameSize=(-self._panel_w / 2, self._panel_w / 2, -self._panel_h / 2, self._panel_h / 2),
-            pos=(base.win.get_x_size() - self._panel_w / 2, 0, -self._panel_h / 2),
+            pos=(base.win.get_x_size() - self._panel_w / 2, -self._panel_h / 2, 0),
             relief=1,
             suppressMouse=0,
         )
@@ -134,9 +146,9 @@ class JoystickTactil:
 
         base.accept("t", self.alternar)
 
-    # ---------------------------------------------------------- layout din├ímico
+    # ---------------------------------------------------------- layout dinámico
     def _tamano_css(self):
-        """Tama├▒o real de la ventana del navegador en p├¡xeles CSS."""
+        """Tamaño real de la ventana del navegador en píxeles CSS."""
         try:
             import platform as _plataforma
             w = int(_plataforma.window.innerWidth)
@@ -148,7 +160,7 @@ class JoystickTactil:
         return None
 
     def _pedir_tamano(self, w, h):
-        """Pide a Panda3D que adapte su backbuffer al tama├▒o del navegador."""
+        """Pide a Panda3D que adapte su backbuffer al tamaño del navegador."""
         if self._pedido_tamano == (w, h):
             return
         self._pedido_tamano = (w, h)
@@ -217,7 +229,7 @@ class JoystickTactil:
         cx = m + radio
         cz = -(h - m - radio)
         self._centro_joy = (cx, cz)
-        self.fondo.set_pos(cx, 0, cz)
+        self.fondo.set_pos(cx, cz, 0)
         self.fondo["frameSize"] = (-radio, radio, -radio, radio)
         self.perilla["frameSize"] = (-perilla, perilla, -perilla, perilla)
 
@@ -227,8 +239,8 @@ class JoystickTactil:
         bh = max(40.0, min(h * 0.075, 64.0))
         self._bw, self._bh = bw, bh
         x_der = w - m - bw / 2
-        self.boton_menu.set_pos(x_der, 0, -(h - m - bh / 2))
-        self.boton_vista.set_pos(x_der, 0, -(h - m - bh - gap - bh / 2))
+        self.boton_menu.set_pos(x_der, -(h - m - bh / 2), 0)
+        self.boton_vista.set_pos(x_der, -(h - m - bh - gap - bh / 2), 0)
         fs = (-bw / 2, bw / 2, -bh / 2, bh / 2)
         esc_b = max(11.0, min(20.0, bh * 0.36))
         for boton in (self.boton_vista, self.boton_menu):
@@ -255,7 +267,7 @@ class JoystickTactil:
             fila_h = max(24.0, (alto_disponible - 18.0) / filas)
             panel_h = filas * fila_h + 18.0
         self._panel_w, self._panel_h, self._panel_z0 = panel_w, panel_h, z0
-        self.panel_menu.set_pos(w - m - panel_w / 2, 0, z0 + panel_h / 2)
+        self.panel_menu.set_pos(w - m - panel_w / 2, z0 + panel_h / 2, 0)
         self.panel_menu["frameSize"] = (-panel_w / 2, panel_w / 2, -panel_h / 2, panel_h / 2)
 
         ancho_celda = panel_w / columnas
@@ -266,7 +278,7 @@ class JoystickTactil:
             fila = idx // columnas
             bx = -panel_w / 2 + ancho_celda * (col + 0.5)
             bz = panel_h / 2 - 9.0 - fila_h * (fila + 0.5)
-            boton.set_pos(bx, 0, bz)
+            boton.set_pos(bx, bz, 0)
             boton["frameSize"] = (-ancho_celda * 0.46, ancho_celda * 0.46,
                                   -fila_h * 0.40, fila_h * 0.40)
             boton["text_scale"] = (esc_p, esc_p)
@@ -319,13 +331,13 @@ class JoystickTactil:
 
     def _ir_a_vista(self, indice):
         self.base.messenger.send("ir-a-vista", [indice])
-        # Cerrar el panel tras seleccionar para no tapar la pantalla en m├│vil
+        # Cerrar el panel tras seleccionar para no tapar la pantalla en móvil
         self.menu_abierto = False
         self.panel_menu.hide()
         self._refrescar_textos()
 
     def set_nombre_vista(self, nombre):
-        """Actualiza el texto del bot├│n r├ípido al cambiar de vista."""
+        """Actualiza el texto del botón rápido al cambiar de vista."""
         self._nombre_vista = nombre
         self._refrescar_textos()
 
@@ -344,7 +356,7 @@ class JoystickTactil:
         return rect[0] <= x <= rect[1] and rect[2] <= z <= rect[3]
 
     def manejar_toque_ui(self, m):
-        """Atiende botones/men├║ y devuelve True si el toque cay├│ en la interfaz."""
+        """Atiende botones/menú y devuelve True si el toque cayó en la interfaz."""
         if not self.activo:
             return False
         pt = self._a_pixel(m)
@@ -365,13 +377,13 @@ class JoystickTactil:
         return False
 
     def procesar_toque(self, m):
-        """Devuelve True si el toque cay├│ en el ├írea del joystick virtual."""
+        """Devuelve True si el toque cayó en el área del joystick virtual."""
         if not self.activo:
             return False
         pt = self._a_pixel(m)
         dx = pt.x - self._centro_joy[0]
         dz = pt.z - self._centro_joy[1]
-        # Margen amplio y c├│modo para dedos en pantalla t├íctil
+        # Margen amplio y cómodo para dedos en pantalla táctil
         if dx * dx + dz * dz <= (self._radio * 1.7) ** 2:
             self.arrastrando = True
             self.controles.joystick_activo = True
@@ -392,7 +404,7 @@ class JoystickTactil:
         if dist > self._radio:
             dx *= self._radio / dist
             dz *= self._radio / dist
-        self.perilla.set_pos(dx, 0, dz)
+        self.perilla.set_pos(dx, dz, 0)
         # dx: desplazamiento horizontal, dz: avance/retroceso
         self.controles.joystick = Vec3(dx / self._radio, 0, dz / self._radio)
 
@@ -404,7 +416,7 @@ class JoystickTactil:
             self.controles.joystick = Vec3(0, 0, 0)
 
     def actualizar(self):
-        # Detecta cambios de tama├▒o u orientaci├│n del navegador/dispositivo.
+        # Detecta cambios de tamaño u orientación del navegador/dispositivo.
         self._reubicar()
 
     def alternar(self):
