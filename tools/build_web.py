@@ -200,6 +200,14 @@ def parchear_index():
         'platform.document.body.style.background = "#101018"',
     )
     html = html.replace("user_canvas : 0,", "user_canvas : 1,")
+    # pythons.js solo convierte config.cdn en URL absoluta cuando el host es
+    # "localhost". En un dominio real (GitHub Pages) quedaria relativo y
+    # import(cdn + "../vt/xterm.js") falla como "bare module specifier".
+    # Forzamos una URL absoluta en runtime (funciona tambien en subpaths).
+    html = html.replace(
+        f'cdn : "cdn/{CDN_VERSION}/",',
+        f'cdn : new URL("cdn/{CDN_VERSION}/", document.baseURI).href,',
+    )
     html = html.replace(
         "async function custom_onload(debug_hidden) {",
         "async function custom_onload(debug_hidden) {\n"
