@@ -69,24 +69,21 @@ class App:
             except Exception:
                 pass
 
-            try:
-                from .utiles import es_web
-                if es_web():
-                    self.tactil = None
-                else:
+                try:
                     from .tactil import JoystickTactil
                     self.tactil = JoystickTactil(self.base, self.controles, self.escena.vistas)
-            except Exception:
-                self.tactil = None
+                except Exception:
+                    self.tactil = None
                 self.base.accept("vista-siguiente", self._vista_siguiente)
                 self.base.accept("ir-a-vista", self._ir_a_vista)
-        else:
-            try:
-                self.tactil = None
+            else:
+                try:
+                    from .tactil import JoystickTactil
+                    self.tactil = JoystickTactil(self.base, self.controles, self.escena.vistas)
+                except Exception:
+                    self.tactil = None
                 self.base.accept("vista-siguiente", self._vista_siguiente)
                 self.base.accept("ir-a-vista", self._ir_a_vista)
-            except Exception:
-                pass
 
         self._aplicar_shader()
         self._instalar_entrada_extra()
