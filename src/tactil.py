@@ -376,7 +376,7 @@ class JoystickTactil:
     def _siguiente_vista(self):
         self.base.messenger.send("vista-siguiente")
 
-        def _a_pixel(self, m=None):
+    def _a_pixel(self, m=None):
         try:
             import platform as _plataforma
             wnd = getattr(_plataforma, "window", None)

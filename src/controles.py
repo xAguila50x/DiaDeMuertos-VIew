@@ -170,11 +170,8 @@ class Controles:
                     self.tactil.actualizar_arrastre(m)
                 except Exception:
                     pass
-            elif self.raton_presionado:
-                dx = (x - self.ultimo_x) * self.base.get_aspect_ratio() * 60.0
-                dy = (y - self.ultimo_y) * 60.0
-                self.camara.girar(dx, dy)
-            self.ultimo_x, self.ultimo_y = x, y
+            self.ultimo_x = m.get_x()
+            self.ultimo_y = m.get_y()
 
         direccion = Vec3(0, 0, 0)
         if "w" in self.teclas:
