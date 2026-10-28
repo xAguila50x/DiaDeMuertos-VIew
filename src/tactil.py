@@ -151,10 +151,35 @@ class JoystickTactil:
         """Tamaño real de la ventana del navegador en píxeles CSS."""
         try:
             import platform as _plataforma
-            w = int(_plataforma.window.innerWidth)
-            h = int(_plataforma.window.innerHeight)
-            if w > 1 and h > 1:
-                return w, h
+            wnd = getattr(_plataforma, "window", None)
+            if wnd is not None:
+                vv = getattr(wnd, "visualViewport", None)
+                if vv is not None:
+                    try:
+                        w = int(getattr(vv, "width") or 0)
+                        h = int(getattr(vv, "height") or 0)
+                        if w > 1 and h > 1:
+                            return w, h
+                    except Exception:
+                        pass
+                try:
+                    w = int(getattr(wnd, "innerWidth") or 0)
+                    h = int(getattr(wnd, "innerHeight") or 0)
+                    if w > 1 and h > 1:
+                        return w, h
+                except Exception:
+                    pass
+                try:
+                    dpr = float(getattr(wnd, "devicePixelRatio") or 1.0)
+                    w = int((getattr(wnd, "screen", None).width or wnd.innerWidth) * 1.0)
+                    h = int((getattr(wnd, "screen", None).height or wnd.innerHeight) * 1.0)
+                    # prefer inner if closer
+                    wi = int(getattr(wnd, "innerWidth") or w)
+                    hi = int(getattr(wnd, "innerHeight") or h)
+                    if wi > 1 and hi > 1:
+                        return wi, hi
+                except Exception:
+                    pass
         except Exception:
             pass
         return None
@@ -199,6 +224,13 @@ class JoystickTactil:
         # ShowBase solo fija pixel2d/aspect2d al iniciar: recalcular al redimensionar.
         base.pixel2d.set_pos(-1, 0, 1)
         base.pixel2d.set_scale(2.0 / w, 1.0, 2.0 / h)
+        raiz = getattr(self, "_raiz_ui", None)
+        if raiz is not None:
+            try:
+                raiz.set_pos(-1, 1, 0)
+                raiz.set_scale(2.0 / w, 2.0 / h, 1.0)
+            except Exception:
+                pass
 
         ar = float(w) / float(h)
         base.aspect2d.set_scale(1.0 / ar, 1.0, 1.0)
@@ -344,10 +376,67 @@ class JoystickTactil:
     def _siguiente_vista(self):
         self.base.messenger.send("vista-siguiente")
 
-    def _a_pixel(self, m):
-        return self.base.pixel2d.get_relative_point(
-            self.base.render2d, Point3(m.get_x(), 0, m.get_y())
-        )
+    def _a_pixel(self, m=None):
+        try:
+            if m is not None:
+                try:
+                    return self.base.pixel2d.get_relative_point(
+                        self.base.render2d, Point3(m.get_x(), 0, m.get_y())
+                    )
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # Fallback para móvil / cuando mouseWatcherNode no actualiza bien
+        try:
+            import platform as _plataforma
+            wnd = getattr(_plataforma, "window", None)
+            if wnd is not None:
+                vv = getattr(wnd, "visualViewport", None)
+                tx = ty = None
+                if vv is not None:
+                    try:
+                        tx = vv.pageLeft + (getattr(vv, "clientX", None) or 0)
+                        ty = vv.pageTop + (getattr(vv, "clientY", None) or 0)
+                    except Exception:
+                        pass
+                if tx is None:
+                    try:
+                        e = getattr(wnd, "_opencode_last_touch", None) or getattr(wnd, "lastTouch", None)
+                        if e is not None:
+                            t = None
+                            try:
+                                ts = getattr(e, "touches", None)
+                                if ts and len(ts) > 0:
+                                    t = ts[0]
+                            except Exception:
+                                pass
+                            if t is None:
+                                try:
+                                    ts = getattr(e, "changedTouches", None)
+                                    if ts and len(ts) > 0:
+                                        t = ts[0]
+                                except Exception:
+                                    pass
+                            if t is not None:
+                                tx = float(getattr(t, "clientX", getattr(t, "pageX", 0)))
+                                ty = float(getattr(t, "clientY", getattr(t, "pageY", 0)))
+                    except Exception:
+                        pass
+                if tx is not None and ty is not None:
+                    try:
+                        w = int(getattr(wnd, "innerWidth") or 1)
+                        h = int(getattr(wnd, "innerHeight") or 1)
+                    except Exception:
+                        w, h = self._w or 1, self._h or 1
+                    if w < 1: w = 1
+                    if h < 1: h = 1
+                    nx = (tx / float(w)) * 2.0 - 1.0
+                    ny = 1.0 - (ty / float(h)) * 2.0
+                    return Point3(nx, 0.0, ny)
+        except Exception:
+            pass
+        return Point3(0, 0, 0)
 
     @staticmethod
     def _en_rect(x, z, rect):
@@ -355,7 +444,7 @@ class JoystickTactil:
             return False
         return rect[0] <= x <= rect[1] and rect[2] <= z <= rect[3]
 
-    def manejar_toque_ui(self, m):
+    def manejar_toque_ui(self, m=None):
         """Atiende botones/menú y devuelve True si el toque cayó en la interfaz."""
         if not self.activo:
             return False
@@ -376,7 +465,7 @@ class JoystickTactil:
             return True
         return False
 
-    def procesar_toque(self, m):
+    def procesar_toque(self, m=None):
         """Devuelve True si el toque cayó en el área del joystick virtual."""
         if not self.activo:
             return False
@@ -384,14 +473,15 @@ class JoystickTactil:
         dx = pt.x - self._centro_joy[0]
         dz = pt.z - self._centro_joy[1]
         # Margen amplio y cómodo para dedos en pantalla táctil
-        if dx * dx + dz * dz <= (self._radio * 1.7) ** 2:
+        margen = self._radio * 2.2
+        if dx * dx + dz * dz <= margen * margen:
             self.arrastrando = True
             self.controles.joystick_activo = True
             self._aplicar_desplazamiento(dx, dz)
             return True
         return False
 
-    def actualizar_arrastre(self, m):
+    def actualizar_arrastre(self, m=None):
         if not self.arrastrando:
             return
         pt = self._a_pixel(m)
@@ -401,11 +491,14 @@ class JoystickTactil:
 
     def _aplicar_desplazamiento(self, dx, dz):
         dist = (dx * dx + dz * dz) ** 0.5
-        if dist > self._radio:
+        if dist > self._radio and dist > 1e-6:
             dx *= self._radio / dist
             dz *= self._radio / dist
         self.perilla.set_pos(dx, dz, 0)
         # dx: desplazamiento horizontal, dz: avance/retroceso
+        if self._radio < 1e-6:
+            self.controles.joystick = Vec3(0, 0, 0)
+            return
         self.controles.joystick = Vec3(dx / self._radio, 0, dz / self._radio)
 
     def soltar(self):
