@@ -77,13 +77,16 @@ class App:
                     from .tactil import JoystickTactil
                     self.tactil = JoystickTactil(self.base, self.controles, self.escena.vistas)
             except Exception:
-                try:
-                    from .tactil import JoystickTactil
-                    self.tactil = JoystickTactil(self.base, self.controles, self.escena.vistas)
-                except Exception:
-                    self.tactil = None
-            self.base.accept("vista-siguiente", self._vista_siguiente)
-            self.base.accept("ir-a-vista", self._ir_a_vista)
+                self.tactil = None
+                self.base.accept("vista-siguiente", self._vista_siguiente)
+                self.base.accept("ir-a-vista", self._ir_a_vista)
+        else:
+            try:
+                self.tactil = None
+                self.base.accept("vista-siguiente", self._vista_siguiente)
+                self.base.accept("ir-a-vista", self._ir_a_vista)
+            except Exception:
+                pass
 
         self._aplicar_shader()
         self._instalar_entrada_extra()
@@ -156,6 +159,11 @@ class App:
 
     def actualizar(self, dt):
         self.controles.actualizar(dt)
+        if self.tactil is not None:
+            try:
+                self.tactil.actualizar()
+            except Exception:
+                pass
         self.escena.actualizar_camara(self.camara.posicion)
         if self.tactil is not None:
             self.tactil.actualizar()
