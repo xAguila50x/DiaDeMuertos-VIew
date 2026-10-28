@@ -161,6 +161,11 @@ class App:
                 self.tactil.actualizar()
             except Exception:
                 pass
+        if self.tactil is not None:
+            try:
+                self.tactil.actualizar()
+            except Exception:
+                pass
         self.escena.actualizar_camara(self.camara.posicion)
         if self.tactil is not None:
             self.tactil.actualizar()
