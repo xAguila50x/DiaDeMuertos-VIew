@@ -476,32 +476,5 @@ frameborder="1"
 
     </script>
 
-<script>
-(function(){
-  try{
-    function store(e){
-      try{
-        var t=null;
-        if(e.touches && e.touches.length>0) t=e.touches[0];
-        else if(e.changedTouches && e.changedTouches.length>0) t=e.changedTouches[0];
-        if(!t) return;
-        window._opencode_last_touch = {
-          clientX: t.clientX||0,
-          clientY: t.clientY||0,
-          pageX: t.pageX||t.clientX||0,
-          pageY: t.pageY||t.clientY||0
-        };
-      }catch(ex){}
-    }
-    var opts={passive:true,capture:true};
-    document.addEventListener('touchstart',store,opts);
-    document.addEventListener('touchmove',store,opts);
-    document.addEventListener('touchend',store,opts);
-    document.addEventListener('pointerdown',store,opts);
-    document.addEventListener('pointermove',store,opts);
-    document.addEventListener('pointerup',store,opts);
-  }catch(e){}
-})();
-</script>
 </body>
 </html>
