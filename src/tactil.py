@@ -1,4 +1,4 @@
-# tactil.py - Interfaz táctil para móvil: joystick virtual y acceso rápido a vistas.
+﻿# tactil.py - Interfaz táctil para móvil: joystick virtual y acceso rápido a vistas.
 
 from panda3d.core import (
     Point3,
@@ -226,7 +226,7 @@ class JoystickTactil:
         cx = m + radio
         cz = -(h - m - radio)
         self._centro_joy = (cx, cz)
-        self.fondo.set_pos(cx, 0, cz)
+        self.fondo.set_pos(cx, cz, 0)
         self.fondo["frameSize"] = (-radio, radio, -radio, radio)
         self.perilla["frameSize"] = (-perilla, perilla, -perilla, perilla)
 
@@ -236,8 +236,8 @@ class JoystickTactil:
         bh = max(40.0, min(h * 0.075, 64.0))
         self._bw, self._bh = bw, bh
         x_der = w - m - bw / 2
-        self.boton_menu.set_pos(x_der, 0, -(h - m - bh / 2))
-        self.boton_vista.set_pos(x_der, 0, -(h - m - bh - gap - bh / 2))
+        self.boton_menu.set_pos(x_der, -(h - m - bh / 2), 0)
+        self.boton_vista.set_pos(x_der, -(h - m - bh - gap - bh / 2), 0)
         fs = (-bw / 2, bw / 2, -bh / 2, bh / 2)
         esc_b = max(11.0, min(20.0, bh * 0.36))
         for boton in (self.boton_vista, self.boton_menu):
@@ -264,7 +264,7 @@ class JoystickTactil:
             fila_h = max(24.0, (alto_disponible - 18.0) / filas)
             panel_h = filas * fila_h + 18.0
         self._panel_w, self._panel_h, self._panel_z0 = panel_w, panel_h, z0
-        self.panel_menu.set_pos(w - m - panel_w / 2, 0, z0 + panel_h / 2)
+        self.panel_menu.set_pos(w - m - panel_w / 2, z0 + panel_h / 2, 0)
         self.panel_menu["frameSize"] = (-panel_w / 2, panel_w / 2, -panel_h / 2, panel_h / 2)
 
         ancho_celda = panel_w / columnas
@@ -275,7 +275,7 @@ class JoystickTactil:
             fila = idx // columnas
             bx = -panel_w / 2 + ancho_celda * (col + 0.5)
             bz = panel_h / 2 - 9.0 - fila_h * (fila + 0.5)
-            boton.set_pos(bx, 0, bz)
+            boton.set_pos(bx, bz, 0)
             boton["frameSize"] = (-ancho_celda * 0.46, ancho_celda * 0.46,
                                   -fila_h * 0.40, fila_h * 0.40)
             boton["text_scale"] = (esc_p, esc_p)
@@ -401,7 +401,7 @@ class JoystickTactil:
         if dist > self._radio:
             dx *= self._radio / dist
             dz *= self._radio / dist
-        self.perilla.set_pos(dx, 0, dz)
+        self.perilla.set_pos(dx, dz, 0)
         # dx: desplazamiento horizontal, dz: avance/retroceso
         self.controles.joystick = Vec3(dx / self._radio, 0, dz / self._radio)
 
