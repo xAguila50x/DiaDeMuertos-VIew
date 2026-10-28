@@ -392,48 +392,39 @@ class JoystickTactil:
             import platform as _plataforma
             wnd = getattr(_plataforma, "window", None)
             if wnd is not None:
-                vv = getattr(wnd, "visualViewport", None)
                 tx = ty = None
-                if vv is not None:
+                try:
+                    lt = getattr(wnd, "_opencode_last_touch", None)
+                    if lt is not None:
+                        tx = float(lt.get("clientX") or lt.get("pageX") or 0)
+                        ty = float(lt.get("clientY") or lt.get("pageY") or 0)
+                except Exception:
+                    pass
+                if tx is None or ty is None:
                     try:
-                        tx = vv.pageLeft + (getattr(vv, "clientX", None) or 0)
-                        ty = vv.pageTop + (getattr(vv, "clientY", None) or 0)
-                    except Exception:
-                        pass
-                if tx is None:
-                    try:
-                        e = getattr(wnd, "_opencode_last_touch", None) or getattr(wnd, "lastTouch", None)
-                        if e is not None:
-                            t = None
-                            try:
-                                ts = getattr(e, "touches", None)
-                                if ts and len(ts) > 0:
-                                    t = ts[0]
-                            except Exception:
-                                pass
-                            if t is None:
-                                try:
-                                    ts = getattr(e, "changedTouches", None)
-                                    if ts and len(ts) > 0:
-                                        t = ts[0]
-                                except Exception:
-                                    pass
-                            if t is not None:
-                                tx = float(getattr(t, "clientX", getattr(t, "pageX", 0)))
-                                ty = float(getattr(t, "clientY", getattr(t, "pageY", 0)))
+                        vv = getattr(wnd, "visualViewport", None)
+                        if vv is not None:
+                            cx = getattr(vv, "clientX", None)
+                            cy = getattr(vv, "clientY", None)
+                            if cx is not None and cy is not None:
+                                tx = float(cx)
+                                ty = float(cy)
                     except Exception:
                         pass
                 if tx is not None and ty is not None:
                     try:
-                        w = int(getattr(wnd, "innerWidth") or 1)
-                        h = int(getattr(wnd, "innerHeight") or 1)
+                        w = int(getattr(wnd, "innerWidth") or 0)
+                        h = int(getattr(wnd, "innerHeight") or 0)
                     except Exception:
-                        w, h = self._w or 1, self._h or 1
-                    if w < 1: w = 1
-                    if h < 1: h = 1
-                    nx = (tx / float(w)) * 2.0 - 1.0
-                    ny = 1.0 - (ty / float(h)) * 2.0
-                    return Point3(nx, 0.0, ny)
+                        w, h = 0, 0
+                    if w < 2: w = int(self._w or 400)
+                    if h < 2: h = int(self._h or 800)
+                    # Coordenadas en nuestro espacio de UI (y hacia arriba)
+                    x_css = float(tx)
+                    y_css = float(ty)
+                    ui_x = x_css
+                    ui_z = -(h - y_css)
+                    return Point3(ui_x, 0.0, ui_z)
         except Exception:
             pass
         return Point3(0, 0, 0)
