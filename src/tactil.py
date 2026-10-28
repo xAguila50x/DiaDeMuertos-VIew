@@ -52,14 +52,23 @@ class JoystickTactil:
     # ------------------------------------------------------------------ build
     def _construir(self):
         base = self.base
-        padre = base.pixel2d
+        # Con coordinate-system yup, usar nodo propio en render2d con Y hacia arriba
+        padre = base.render2d.attach_new_node("ui_tactil_px")
+        self._raiz_ui = padre
+        try:
+            w0 = max(2, int(base.win.get_x_size()))
+            h0 = max(2, int(base.win.get_y_size()))
+        except Exception:
+            w0, h0 = 400, 800
+        padre.set_pos(-1, 1, 0)
+        padre.set_scale(2.0 / w0, 2.0 / h0, 1.0)
 
         # ---------------- Joystick virtual (abajo a la izquierda) ----------------
         self.fondo = DirectFrame(
             parent=padre,
             frameColor=(0.10, 0.08, 0.16, 0.55),
             frameSize=(-self._radio, self._radio, -self._radio, self._radio),
-            pos=(self._centro_joy[0], 0, self._centro_joy[1]),
+            pos=(self._centro_joy[0], self._centro_joy[1], 0),
             relief=1,
             suppressMouse=0,
         )
@@ -108,7 +117,7 @@ class JoystickTactil:
             parent=padre,
             frameColor=(0.12, 0.09, 0.18, 0.92),
             frameSize=(-self._panel_w / 2, self._panel_w / 2, -self._panel_h / 2, self._panel_h / 2),
-            pos=(base.win.get_x_size() - self._panel_w / 2, 0, -self._panel_h / 2),
+            pos=(base.win.get_x_size() - self._panel_w / 2, -self._panel_h / 2, 0),
             relief=1,
             suppressMouse=0,
         )
