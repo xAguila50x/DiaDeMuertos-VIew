@@ -76,6 +76,21 @@ class Controles:
 
         base.accept("mouse1", self._raton_abajo)
         base.accept("mouse1-up", self._raton_arriba)
+        base.accept("mouse-move", self._raton_mover)
+        try:
+            base.accept("touch-down", self._raton_abajo)
+            base.accept("touch-down:1", self._raton_abajo)
+        except Exception:
+            pass
+        try:
+            base.accept("touch-up", self._raton_arriba)
+            base.accept("touch-up:1", self._raton_arriba)
+        except Exception:
+            pass
+        try:
+            base.accept("touch-move", self._raton_mover)
+        except Exception:
+            pass
 
     def _pulsar(self, tecla):
         self.teclas.add(tecla)
@@ -83,36 +98,78 @@ class Controles:
     def _soltar(self, tecla):
         self.teclas.discard(tecla)
 
-    def _raton_abajo(self):
+    def _raton_mover(self):
         mwn = getattr(self.base, "mouseWatcherNode", None)
         if not mwn or not mwn.has_mouse():
             return
         m = mwn.get_mouse()
-        self.ultimo_x = m.get_x()
-        self.ultimo_y = m.get_y()
+        if self.tactil and getattr(self.tactil, "arrastrando", False):
+            try:
+                self.tactil.actualizar_arrastre(m)
+            except Exception:
+                pass
+            return
+        if self.raton_presionado and not self.joystick_activo:
+            dx = m.get_x() - self.ultimo_x
+            dy = m.get_y() - self.ultimo_y
+            self.ultimo_x = m.get_x()
+            self.ultimo_y = m.get_y()
+            self._mover_camara(dx, dy)
+
+    def _raton_abajo(self):
+        mwn = getattr(self.base, "mouseWatcherNode", None)
+        m = None
+        if mwn and mwn.has_mouse():
+            m = mwn.get_mouse()
+            self.ultimo_x = m.get_x()
+            self.ultimo_y = m.get_y()
+        else:
+            try:
+                # En móvil sin mouseWatcher válido, dejar que táctil intente por coordenadas CSS
+                pass
+            except Exception:
+                pass
 
         # Si el toque cae dentro del joystick táctil, lo atiende el joystick
         if self.tactil and getattr(self.tactil, "activo", False):
-            if self.tactil.procesar_toque(m):
-                return
-            if hasattr(self.tactil, "manejar_toque_ui") and self.tactil.manejar_toque_ui(m):
-                return
+            try:
+                if self.tactil.procesar_toque(m):
+                    return
+            except Exception:
+                pass
+            try:
+                if hasattr(self.tactil, "manejar_toque_ui") and self.tactil.manejar_toque_ui(m):
+                    return
+            except Exception:
+                pass
 
-        # Si no, es rotación libre de cámara
-        self.raton_presionado = True
+        # Si no, es rotación libre de cámara (solo si hay mouse)
+        if mwn and mwn.has_mouse():
+            self.raton_presionado = True
 
     def _raton_arriba(self):
         self.raton_presionado = False
         if self.tactil:
-            self.tactil.soltar()
+            try:
+                self.tactil.soltar()
+            except Exception:
+                pass
 
     def actualizar(self, dt):
         mwn = getattr(self.base, "mouseWatcherNode", None)
         if mwn and mwn.has_mouse():
             m = mwn.get_mouse()
-            x, y = m.get_x(), m.get_y()
-            if self.tactil and getattr(self.tactil, "arrastrando", False):
-                self.tactil.actualizar_arrastre(m)
+            if self.raton_presionado and not self.joystick_activo:
+                dx = m.get_x() - self.ultimo_x
+                dy = m.get_y() - self.ultimo_y
+                self.ultimo_x = m.get_x()
+                self.ultimo_y = m.get_y()
+                self._mover_camara(dx, dy)
+            elif self.tactil and getattr(self.tactil, "arrastrando", False):
+                try:
+                    self.tactil.actualizar_arrastre(m)
+                except Exception:
+                    pass
             elif self.raton_presionado:
                 dx = (x - self.ultimo_x) * self.base.get_aspect_ratio() * 60.0
                 dy = (y - self.ultimo_y) * 60.0
