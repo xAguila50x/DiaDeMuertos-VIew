@@ -1,4 +1,4 @@
-# tactil.py - Interfaz táctil para móvil: joystick virtual y acceso rápido a vistas.
+﻿# tactil.py - Interfaz táctil para móvil: joystick virtual y acceso rápido a vistas.
 
 from panda3d.core import (
     Point3,
@@ -376,18 +376,7 @@ class JoystickTactil:
     def _siguiente_vista(self):
         self.base.messenger.send("vista-siguiente")
 
-    def _a_pixel(self, m=None):
-        try:
-            if m is not None:
-                try:
-                    return self.base.pixel2d.get_relative_point(
-                        self.base.render2d, Point3(m.get_x(), 0, m.get_y())
-                    )
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        # Fallback para móvil / cuando mouseWatcherNode no actualiza bien
+        def _a_pixel(self, m=None):
         try:
             import platform as _plataforma
             wnd = getattr(_plataforma, "window", None)
@@ -396,8 +385,8 @@ class JoystickTactil:
                 try:
                     lt = getattr(wnd, "_opencode_last_touch", None)
                     if lt is not None:
-                        tx = float(lt.get("clientX") or lt.get("pageX") or 0)
-                        ty = float(lt.get("clientY") or lt.get("pageY") or 0)
+                        tx = float(lt.get("clientX") or lt.get("pageX") or lt.get("x") or 0)
+                        ty = float(lt.get("clientY") or lt.get("pageY") or lt.get("y") or 0)
                 except Exception:
                     pass
                 if tx is None or ty is None:
@@ -417,14 +406,19 @@ class JoystickTactil:
                         h = int(getattr(wnd, "innerHeight") or 0)
                     except Exception:
                         w, h = 0, 0
-                    if w < 2: w = int(self._w or 400)
-                    if h < 2: h = int(self._h or 800)
-                    # Coordenadas en nuestro espacio de UI (y hacia arriba)
+                    if w < 2: w = int(getattr(self, "_w", 0) or 400)
+                    if h < 2: h = int(getattr(self, "_h", 0) or 800)
                     x_css = float(tx)
                     y_css = float(ty)
-                    ui_x = x_css
-                    ui_z = -(h - y_css)
-                    return Point3(ui_x, 0.0, ui_z)
+                    return Point3(x_css, 0.0, -(h - y_css))
+        except Exception:
+            pass
+        try:
+            if m is not None:
+                try:
+                    return self.base.pixel2d.get_relative_point(self.base.render2d, Point3(m.get_x(), 0, m.get_y()))
+                except Exception:
+                    pass
         except Exception:
             pass
         return Point3(0, 0, 0)
